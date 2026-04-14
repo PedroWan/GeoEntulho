@@ -1,0 +1,69 @@
+# .NET
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+*.sln.user
+.vs/
+.vscode/
+settings.json
+launch.json
+*.user
+*.suo
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Visual Studio cache/options
+.vs/
+
+# NuGet
+.nuget/
+nuget.config
+
+# Node.js / NPM
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+dist/
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Application specific
+appsettings.json
+appsettings.Development.json
+.env
+.env.local
+*.log
+*.db
+*.sqlite
+
+# Vite
+.vite/
