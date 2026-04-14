@@ -446,7 +446,7 @@ CREATE TABLE TicketUpdates (
 ### Database Debugging
 ```bash
 # Connect via MySQL Workbench or CLI:
-mysql -u root -p"E486927w*"
+mysql -u root -p
 
 # Check tables:
 USE geoentulho;
