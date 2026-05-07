@@ -102,5 +102,53 @@ namespace GeoEntulho.API.Controllers
 
             return Ok(new { success = true, user });
         }
+
+        /// <summary>
+        /// Get user profile (complete information)
+        /// </summary>
+        /// <returns>User profile details</returns>
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<ActionResult<UserProfileDto>> GetProfile()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            {
+                return Unauthorized(new { message = "Token inválido" });
+            }
+
+            var profile = await _authService.GetUserProfile(userId);
+            if (profile == null)
+            {
+                return NotFound(new { message = "Usuário não encontrado" });
+            }
+
+            return Ok(profile);
+        }
+
+        /// <summary>
+        /// Update user profile
+        /// </summary>
+        /// <param name="dto">Profile update data</param>
+        /// <returns>Updated profile</returns>
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            {
+                return Unauthorized(new { message = "Token inválido" });
+            }
+
+            var profile = await _authService.UpdateUserProfile(userId, dto);
+            if (profile == null)
+            {
+                return NotFound(new { message = "Usuário não encontrado" });
+            }
+
+            _logger.LogInformation($"User profile updated: {userId}");
+            return Ok(profile);
+        }
     }
 }

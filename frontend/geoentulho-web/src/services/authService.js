@@ -16,11 +16,13 @@ export const authService = {
       email,
       password,
     });
-    if (response.data.token) {
+    if (response.data && response.data.token) {
       localStorage.setItem('accessToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      // Armazenar apenas o objeto user
+      const userData = response.data.user || response.data;
+      localStorage.setItem('user', JSON.stringify(userData));
     }
-    return response.data;
+    return response.data.user || response.data;
   },
 
   logout: () => {

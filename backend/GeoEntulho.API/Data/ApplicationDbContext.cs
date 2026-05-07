@@ -57,25 +57,21 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Ticket>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.WasteType).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Address).IsRequired();
-            entity.Property(e => e.ResidueType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.City).IsRequired();
+            entity.Property(e => e.State).IsRequired();
             
-            entity.HasOne(e => e.Citizen)
-                .WithMany(e => e.TicketsAsCreator)
-                .HasForeignKey(e => e.CitizenId)
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
             
-            entity.HasOne(e => e.Company)
-                .WithMany(e => e.Tickets)
-                .HasForeignKey(e => e.CompanyId)
-                .OnDelete(DeleteBehavior.SetNull);
-            
-            entity.HasOne(e => e.CollectionPoint)
-                .WithMany(e => e.Tickets)
-                .HasForeignKey(e => e.CollectionPointId)
+            entity.HasOne(e => e.AssignedToUser)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedToUserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

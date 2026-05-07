@@ -3,6 +3,7 @@ using System;
 using GeoEntulho.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GeoEntulho.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260428225057_AddUserProfileFields")]
+    partial class AddUserProfileFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -110,15 +113,8 @@ namespace GeoEntulho.API.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("AssignedToUserId")
+                    b.Property<int>("CitizenId")
                         .HasColumnType("int");
-
-                    b.Property<int?>("CitizenId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<int?>("CollectionPointId")
                         .HasColumnType("int");
@@ -132,33 +128,22 @@ namespace GeoEntulho.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
 
-                    b.Property<decimal?>("EstimatedWeight")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<double?>("Latitude")
+                    b.Property<double>("Latitude")
                         .HasColumnType("double");
 
-                    b.Property<double?>("Longitude")
+                    b.Property<double>("Longitude")
                         .HasColumnType("double");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("longtext");
 
                     b.Property<string>("ResidueType")
-                        .HasColumnType("longtext");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime?>("ScheduledDate")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -171,7 +156,9 @@ namespace GeoEntulho.API.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("Type")
-                        .HasColumnType("longtext");
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -179,30 +166,18 @@ namespace GeoEntulho.API.Migrations
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("UserId1")
-                        .HasColumnType("int");
-
-                    b.Property<double?>("VolumeM3")
+                    b.Property<double>("VolumeM3")
                         .HasColumnType("double");
-
-                    b.Property<string>("WasteType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssignedToUserId");
+                    b.HasIndex("CitizenId");
 
                     b.HasIndex("CollectionPointId");
 
                     b.HasIndex("CompanyId");
 
-                    b.HasIndex("CreatedByUserId");
-
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("Tickets");
                 });
@@ -338,36 +313,31 @@ namespace GeoEntulho.API.Migrations
 
             modelBuilder.Entity("GeoEntulho.API.Models.Ticket", b =>
                 {
-                    b.HasOne("GeoEntulho.API.Models.User", "AssignedToUser")
-                        .WithMany()
-                        .HasForeignKey("AssignedToUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("GeoEntulho.API.Models.CollectionPoint", null)
-                        .WithMany("Tickets")
-                        .HasForeignKey("CollectionPointId");
-
-                    b.HasOne("GeoEntulho.API.Models.Company", null)
-                        .WithMany("Tickets")
-                        .HasForeignKey("CompanyId");
-
-                    b.HasOne("GeoEntulho.API.Models.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
+                    b.HasOne("GeoEntulho.API.Models.User", "Citizen")
+                        .WithMany("TicketsAsCreator")
+                        .HasForeignKey("CitizenId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("GeoEntulho.API.Models.CollectionPoint", "CollectionPoint")
+                        .WithMany("Tickets")
+                        .HasForeignKey("CollectionPointId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GeoEntulho.API.Models.Company", "Company")
+                        .WithMany("Tickets")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("GeoEntulho.API.Models.User", null)
                         .WithMany("TicketsAsCompany")
                         .HasForeignKey("UserId");
 
-                    b.HasOne("GeoEntulho.API.Models.User", null)
-                        .WithMany("TicketsAsCreator")
-                        .HasForeignKey("UserId1");
+                    b.Navigation("Citizen");
 
-                    b.Navigation("AssignedToUser");
+                    b.Navigation("CollectionPoint");
 
-                    b.Navigation("CreatedByUser");
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("GeoEntulho.API.Models.TicketUpdate", b =>

@@ -58,10 +58,30 @@ export default function Register() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="citizen">Cidadão</option>
-            <option value="company">Empresa de Coleta</option>
-          </select>
+
+          {/* Seletor de tipo de usuário com cards */}
+          <div className="user-type-selector">
+            <label>Tipo de Conta *</label>
+            <div className="type-options">
+              <div 
+                className={`type-option ${type === 'citizen' ? 'active' : ''}`}
+                onClick={() => setType('citizen')}
+              >
+                <div className="type-icon">👤</div>
+                <div className="type-label">Cidadão</div>
+                <small>Solicitar coleta de resíduos</small>
+              </div>
+              <div 
+                className={`type-option ${type === 'company' ? 'active' : ''}`}
+                onClick={() => setType('company')}
+              >
+                <div className="type-icon">🏢</div>
+                <div className="type-label">Empresa</div>
+                <small>Prestar serviços de coleta</small>
+              </div>
+            </div>
+          </div>
+
           <button type="submit" disabled={loading}>
             {loading ? 'Registrando...' : 'Registrar'}
           </button>

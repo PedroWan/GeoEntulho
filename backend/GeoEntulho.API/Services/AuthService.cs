@@ -14,6 +14,8 @@ namespace GeoEntulho.API.Services
         Task<AuthResponseDto> Register(RegisterDto dto);
         Task<AuthResponseDto> Login(LoginDto dto);
         Task<(bool, string)> ValidatePassword(string password, string hash);
+        Task<UserProfileDto?> GetUserProfile(int userId);
+        Task<UserProfileDto?> UpdateUserProfile(int userId, UpdateProfileDto dto);
     }
 
     public class AuthService : IAuthService
@@ -178,6 +180,67 @@ namespace GeoEntulho.API.Services
             {
                 return (false, $"Erro ao validar: {ex.Message}");
             }
+        }
+
+        public async Task<UserProfileDto?> GetUserProfile(int userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return null;
+
+            return new UserProfileDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Name = user.Name,
+                Type = user.Type,
+                Phone = user.Phone,
+                PhotoUrl = user.PhotoUrl,
+                Bio = user.Bio,
+                Address = user.Address,
+                City = user.City,
+                State = user.State,
+                ZipCode = user.ZipCode,
+                IsVerified = user.IsVerified,
+                CompanyName = user.CompanyName,
+                CompanyWebsite = user.CompanyWebsite,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            };
+        }
+
+        public async Task<UserProfileDto?> UpdateUserProfile(int userId, UpdateProfileDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return null;
+
+            // Atualizar campos
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+                user.Name = dto.Name;
+            if (!string.IsNullOrWhiteSpace(dto.Phone))
+                user.Phone = dto.Phone;
+            if (!string.IsNullOrWhiteSpace(dto.Bio))
+                user.Bio = dto.Bio;
+            if (!string.IsNullOrWhiteSpace(dto.Address))
+                user.Address = dto.Address;
+            if (!string.IsNullOrWhiteSpace(dto.City))
+                user.City = dto.City;
+            if (!string.IsNullOrWhiteSpace(dto.State))
+                user.State = dto.State;
+            if (!string.IsNullOrWhiteSpace(dto.ZipCode))
+                user.ZipCode = dto.ZipCode;
+            if (!string.IsNullOrWhiteSpace(dto.CompanyName))
+                user.CompanyName = dto.CompanyName;
+            if (!string.IsNullOrWhiteSpace(dto.CompanyWebsite))
+                user.CompanyWebsite = dto.CompanyWebsite;
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return await GetUserProfile(userId);
         }
 
         private string GenerateJwtToken(User user)
