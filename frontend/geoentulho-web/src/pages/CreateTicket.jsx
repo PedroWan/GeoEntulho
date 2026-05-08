@@ -74,7 +74,7 @@ export default function CreateTicket() {
 
       const response = await api.post('/api/tickets', ticketData);
 
-      if (response.data.success || response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         setSuccess('Chamado criado com sucesso! Redirecionando...');
         setTimeout(() => {
           navigate('/my-tickets');
