@@ -1,5 +1,6 @@
 {
-  "outputDirectory": "frontend/geoentulho-web/dist",
+  "buildCommand": "npm --prefix ./frontend/geoentulho-web run build",
+  "outputDirectory": "./frontend/geoentulho-web/dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
