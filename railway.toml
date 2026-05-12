@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd backend/GeoEntulho.API && dotnet publish -c Release -o /app"
+
+[deploy]
+startCommand = "cd /app && ./GeoEntulho.API"
+restartPolicyMaxRetries = 5
