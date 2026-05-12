@@ -1,5 +1,3 @@
 {
-  "buildCommand": "npm --prefix frontend/geoentulho-web install && npm --prefix frontend/geoentulho-web run build",
-  "outputDirectory": "frontend/geoentulho-web/dist",
-  "framework": "vite"
+  "outputDirectory": "frontend/geoentulho-web/dist"
 }
