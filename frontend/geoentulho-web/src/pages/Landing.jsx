@@ -146,33 +146,104 @@ export default function Landing() {
       <section id="sobre" className="sobre">
         <div className="container-header">
           <h2 className="section-title">Sobre o GeoEntulho</h2>
-          <div className="sobre-content">
-            <div className="sobre-text">
-              <p>
-                O GeoEntulho é uma plataforma inovadora de gestão de resíduos que conecta
-                cidadãos e empresas com soluções sustentáveis de coleta e destinação.
-              </p>
-              <p>
-                Com tecnologia de ponta e compromisso ambiental, transformamos a forma como
-                os resíduos são gerenciados, garantindo práticas responsáveis e sustentáveis.
-              </p>
-              <p>
-                Nossa missão é facilitar a vida das pessoas enquanto protegemos o meio ambiente.
-              </p>
+          
+          {/* Estratégia Cards */}
+          <div className="estrategia-grid">
+            <div className="estrategia-card">
+              <div className="estrategia-icon">🏙️</div>
+              <h3>Desenho Urbano Invisível</h3>
+              <p>Ferramenta que organiza o território e ataca a fragmentação logística, eliminando pontos de descarte irregular nas periferias</p>
             </div>
-            <div className="sobre-stats">
-              <div className="stat">
-                <h4>500+</h4>
-                <p>Usuários Ativos</p>
+
+            <div className="estrategia-card">
+              <div className="estrategia-icon">🌿</div>
+              <h3>Urbanismo Sustentável</h3>
+              <p>Prefeituras mapeiam fluxos, otimizam limpeza urbana e recuperam áreas degradadas de forma organizada</p>
+            </div>
+
+            <div className="estrategia-card">
+              <div className="estrategia-icon">♻️</div>
+              <h3>Economia Circular</h3>
+              <p>Monitoramos origem dos resíduos para reaproveitamento de materiais na cadeia construtiva, reduzindo custos e impactos</p>
+            </div>
+
+            <div className="estrategia-card">
+              <div className="estrategia-icon">🤝</div>
+              <h3>Direito à Cidade</h3>
+              <p>Elo entre tecnologia e compromisso social, transformando gestão de resíduos em pilar de cidades resilientes</p>
+            </div>
+          </div>
+
+          {/* Ciclo de Operação */}
+          <div className="ciclo-section">
+            <h2 className="section-title">Nosso Ciclo de Operação</h2>
+            <div className="ciclo-flow">
+              <div className="ciclo-step">
+                <div className="ciclo-number">1</div>
+                <h4>Geração</h4>
+                <p>Cidadãos reportam</p>
               </div>
-              <div className="stat">
-                <h4>100+</h4>
-                <p>Pontos de Coleta</p>
+              <div className="ciclo-connector">→</div>
+              <div className="ciclo-step">
+                <div className="ciclo-number">2</div>
+                <h4>Coleta</h4>
+                <p>Pontos monitorados</p>
               </div>
-              <div className="stat">
-                <h4>50</h4>
-                <p>Empresas Parceiras</p>
+              <div className="ciclo-connector">→</div>
+              <div className="ciclo-step">
+                <div className="ciclo-number">3</div>
+                <h4>Triagem</h4>
+                <p>Classificação</p>
               </div>
+              <div className="ciclo-connector">→</div>
+              <div className="ciclo-step">
+                <div className="ciclo-number">4</div>
+                <h4>Reinsersão</h4>
+                <p>Cadeia construtiva</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Impacto Cards */}
+          <div className="impacto-section">
+            <h2 className="section-title">Impacto no Território</h2>
+            <div className="servicos-grid">
+              <div className="service-card">
+                <div className="service-icon">🗺️</div>
+                <h3>Mapa de Fluxos</h3>
+                <p>Visualizar onde resíduo é gerado e otimizar rotas de coleta</p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon">🚫</div>
+                <h3>Zero Irregularidades</h3>
+                <p>Eliminar pontos de descarte clandestino através de monitoramento</p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon">🏘️</div>
+                <h3>Periferias Limpas</h3>
+                <p>Recuperar áreas degradadas e melhorar saúde pública</p>
+              </div>
+              <div className="service-card">
+                <div className="service-icon">🌱</div>
+                <h3>Cidades Resilientes</h3>
+                <p>Criar cidades planejadas e ambientalmente responsáveis</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="sobre-stats">
+            <div className="stat">
+              <h4>500+</h4>
+              <p>Usuários</p>
+            </div>
+            <div className="stat">
+              <h4>100+</h4>
+              <p>Pontos de Coleta</p>
+            </div>
+            <div className="stat">
+              <h4>50</h4>
+              <p>Parceiros</p>
             </div>
           </div>
         </div>
