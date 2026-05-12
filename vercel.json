@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd frontend/geoentulho-web && npm install && npm run build",
+  "outputDirectory": "frontend/geoentulho-web/dist",
+  "framework": "vite",
+  "regions": ["sfo1"],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
+}
