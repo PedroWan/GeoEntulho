@@ -1,3 +1,6 @@
 {
-  "outputDirectory": "frontend/geoentulho-web/dist"
+  "outputDirectory": "frontend/geoentulho-web/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
