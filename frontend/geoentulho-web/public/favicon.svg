@@ -1,15 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Fundo circular com cor primária do projeto -->
+  <!-- Fundo -->
   <circle cx="50" cy="50" r="50" fill="#2D7A5B"/>
   
-  <!-- Símbolo de reciclagem/resíduos -->
-  <g transform="translate(50, 50)">
-    <!-- Triângulo externo (reciclagem) -->
-    <path d="M 0,-25 L 21.65,12.5 L -21.65,12.5 Z" fill="none" stroke="#F4B860" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Globo terrestre -->
+  <circle cx="50" cy="50" r="35" fill="#4A90E2" stroke="#F4B860" stroke-width="2"/>
+  
+  <!-- Continentes (simplificado) -->
+  <g fill="#2D7A5B">
+    <!-- América do Sul -->
+    <path d="M 42 45 Q 40 55 45 62 Q 50 65 52 60 Q 50 50 45 45 Z"/>
     
-    <!-- Setas internas (movimento circular) -->
-    <path d="M -8,-20 L -15,-20 L -12,-10" fill="none" stroke="#F4B860" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M 15,15 L 20,10 L 18,20" fill="none" stroke="#F4B860" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M -5,20 L -10,18 L -5,10" fill="none" stroke="#F4B860" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- África -->
+    <path d="M 55 40 Q 60 45 62 55 Q 60 65 55 68 Q 52 65 52 50 Z"/>
+    
+    <!-- Europa/Ásia -->
+    <path d="M 60 30 Q 70 28 75 35 Q 72 40 65 38 Z"/>
   </g>
+  
+  <!-- Linha do Equador -->
+  <line x1="25" y1="50" x2="75" y2="50" stroke="#F4B860" stroke-width="1" opacity="0.5"/>
 </svg>
