@@ -8,6 +8,19 @@ using GeoEntulho.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Em produção, tenta ler da variável de ambiente
+if (string.IsNullOrEmpty(connectionString))
+{
+    var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+    var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
+    var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "geoentulho";
+    var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "root";
+    var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "";
+    
+    connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};Uid={dbUser};Pwd={dbPassword};";
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
 );
