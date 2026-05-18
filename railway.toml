@@ -2,6 +2,10 @@
 builder = "nixpacks"
 buildCommand = "cd backend/GeoEntulho.API && dotnet publish -c Release -o /app"
 
+[build.nixpacks]
+providers = ["dotnet"]
+
 [deploy]
-startCommand = "cd /app && ./GeoEntulho.API"
+startCommand = "/app/GeoEntulho.API"
 restartPolicyMaxRetries = 5
+healthchecks = {cmd = "curl http://localhost:5000/health || exit 1", interval = 10, timeout = 5, retries = 3}
