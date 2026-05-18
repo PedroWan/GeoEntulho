@@ -54,6 +54,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         var environment = builder.Environment.EnvironmentName;
+        var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "http://localhost:5173";
         
         if (environment == "Development")
         {
@@ -64,10 +65,11 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            // Em produção: permitir qualquer origem (Railway/Vercel)
-            policy.AllowAnyOrigin()
+            // Em produção: permitir apenas o frontend específico com credentials
+            policy.WithOrigins(frontendUrl)
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials();
         }
     });
 });
