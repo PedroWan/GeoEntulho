@@ -7,6 +7,10 @@ using GeoEntulho.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar logging para diagnóstico
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Em produção, tenta ler da variável de ambiente
@@ -21,8 +25,10 @@ if (string.IsNullOrEmpty(connectionString))
     connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};Uid={dbUser};Pwd={dbPassword};";
 }
 
+Console.WriteLine($"[GeoEntulho] Conectando ao banco: {connectionString?.Replace(connectionString.Split(';').Last(l => l.Contains("Pwd=")), "Pwd=***")}");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+    options.UseMySql(connectionString, new MariaDbServerVersion(new Version(9, 6)))
 );
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -83,17 +89,23 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
-// Aplicar migrations automaticamente em produção
+// Aplicar migrations automaticamente
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Console.WriteLine("[GeoEntulho] Iniciando aplicação de migrations...");
         dbContext.Database.Migrate();
+        Console.WriteLine("[GeoEntulho] Migrations aplicadas com sucesso!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Erro ao aplicar migrations: {ex.Message}");
+        Console.WriteLine($"[GeoEntulho] Erro ao aplicar migrations:");
+        Console.WriteLine($"  Tipo: {ex.GetType().Name}");
+        Console.WriteLine($"  Mensagem: {ex.Message}");
+        Console.WriteLine($"  StackTrace: {ex.StackTrace}");
+        // Continuar mesmo com erro nas migrations
     }
 }
 
