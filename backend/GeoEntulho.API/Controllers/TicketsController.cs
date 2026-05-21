@@ -1,10 +1,9 @@
 using GeoEntulho.API.DTOs;
-using GeoEntulho.API.Data;
-using GeoEntulho.API.Models;
+using GeoEntulho.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Google.Cloud.Firestore;
 
 namespace GeoEntulho.API.Controllers
 {
@@ -13,12 +12,12 @@ namespace GeoEntulho.API.Controllers
     [Authorize]
     public class TicketsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IFirebaseService _firebaseService;
         private readonly ILogger<TicketsController> _logger;
 
-        public TicketsController(ApplicationDbContext context, ILogger<TicketsController> logger)
+        public TicketsController(IFirebaseService firebaseService, ILogger<TicketsController> logger)
         {
-            _context = context;
+            _firebaseService = firebaseService;
             _logger = logger;
         }
 
@@ -26,127 +25,136 @@ namespace GeoEntulho.API.Controllers
         /// Listar chamados (cidadão vê seus, empresa vê os abertos)
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<List<TicketDto>>> GetTickets()
+        public async Task<ActionResult<List<object>>> GetTickets()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            var userTypeClaim = User.FindFirst("Type");
-
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
-
-            var userType = userTypeClaim?.Value;
-            var query = _context.Tickets.AsQueryable();
-
-            // Se for cidadão, vê apenas seus chamados
-            if (userType == "citizen")
+            try
             {
-                query = query.Where(t => t.CreatedByUserId == userId);
+                var emailClaim = User.FindFirst(ClaimTypes.Email);
+                var typeClaim = User.FindFirst("Type");
+
+                if (emailClaim == null || typeClaim == null)
+                    return Unauthorized(new { message = "Token inválido" });
+
+                var tickets = await _firebaseService.GetTicketsAsync(emailClaim.Value, typeClaim.Value);
+                return Ok(tickets);
             }
-            // Se for empresa, vê apenas chamados abertos e que aceitou
-            else if (userType == "company")
+            catch (Exception ex)
             {
-                query = query.Where(t => t.Status == "aberto" || t.AssignedToUserId == userId);
+                _logger.LogError($"Error getting tickets: {ex.Message}");
+                return StatusCode(500, new { message = "Erro ao obter tickets" });
             }
-
-            var tickets = await query
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.AssignedToUser)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-
-            var ticketDtos = tickets.Select(t => new TicketDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                WasteType = t.WasteType,
-                Address = t.Address,
-                City = t.City,
-                State = t.State,
-                Phone = t.Phone,
-                EstimatedWeight = t.EstimatedWeight,
-                Status = t.Status,
-                CreatedByUserId = t.CreatedByUserId,
-                CreatedByName = t.CreatedByUser?.Name,
-                AssignedToUserId = t.AssignedToUserId,
-                AssignedToName = t.AssignedToUser?.Name,
-                CreatedAt = t.CreatedAt,
-                UpdatedAt = t.UpdatedAt
-            }).ToList();
-
-            return Ok(ticketDtos);
         }
 
         /// <summary>
         /// Criar novo chamado (apenas cidadão)
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<TicketDto>> CreateTicket([FromBody] CreateTicketDto dto)
+        public async Task<ActionResult<object>> CreateTicket([FromBody] CreateTicketDto dto)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            var userTypeClaim = User.FindFirst("Type");
-
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
-
-            if (userTypeClaim?.Value != "citizen")
-                return Forbid("Apenas cidadãos podem criar chamados");
-
-            var ticket = new Ticket
+            try
             {
-                Title = dto.Title,
-                Description = dto.Description,
-                WasteType = dto.WasteType,
-                Address = dto.Address,
-                City = dto.City,
-                State = dto.State,
-                Phone = dto.Phone,
-                EstimatedWeight = dto.EstimatedWeight,
-                Status = "aberto",
-                CreatedByUserId = userId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                var emailClaim = User.FindFirst(ClaimTypes.Email);
+                var typeClaim = User.FindFirst("Type");
+                var nameClaim = User.FindFirst(ClaimTypes.Name);
 
-            _context.Tickets.Add(ticket);
-            await _context.SaveChangesAsync();
+                if (emailClaim == null || typeClaim == null)
+                    return Unauthorized(new { message = "Token inválido" });
 
-            _logger.LogInformation($"Ticket created: {ticket.Id} by user {userId}");
+                if (typeClaim.Value != "citizen")
+                    return Forbid("Apenas cidadãos podem criar chamados");
 
-            return CreatedAtAction(nameof(GetTicketById), new { id = ticket.Id }, MapToDto(ticket));
+                var ticketData = new Dictionary<string, object>
+                {
+                    { "title", dto.Title ?? "" },
+                    { "description", dto.Description ?? "" },
+                    { "wasteType", dto.WasteType ?? "" },
+                    { "address", dto.Address ?? "" },
+                    { "city", dto.City ?? "" },
+                    { "state", dto.State ?? "" },
+                    { "phone", dto.Phone ?? "" },
+                    { "estimatedWeight", dto.EstimatedWeight ?? 0 },
+                    { "status", "aberto" },
+                    { "createdByUserId", emailClaim.Value },
+                    { "createdByName", nameClaim?.Value ?? "" },
+                    { "createdAt", Timestamp.Now },
+                    { "updatedAt", Timestamp.Now }
+                };
+
+                var ticketId = await _firebaseService.CreateTicketAsync(ticketData);
+
+                _logger.LogInformation($"Ticket created: {ticketId} by user {emailClaim.Value}");
+
+                return CreatedAtAction(nameof(GetTicketById), new { id = ticketId }, new { id = ticketId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating ticket: {ex.Message}");
+                return StatusCode(500, new { message = $"Erro ao criar ticket: {ex.Message}" });
+            }
         }
 
         /// <summary>
         /// Obter chamado por ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<TicketDto>> GetTicketById(int id)
+        public async Task<ActionResult<object>> GetTicketById(string id)
         {
-            var ticket = await _context.Tickets
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.AssignedToUser)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            try
+            {
+                var ticket = await _firebaseService.GetTicketAsync(id);
 
-            if (ticket == null)
-                return NotFound();
+                if (ticket == null)
+                    return NotFound(new { message = "Ticket não encontrado" });
 
-            return Ok(MapToDto(ticket));
+                return Ok(ticket);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting ticket {id}: {ex.Message}");
+                return StatusCode(500, new { message = "Erro ao obter ticket" });
+            }
         }
 
         /// <summary>
         /// Atualizar status do chamado (apenas empresa)
         /// </summary>
         [HttpPut("{id}/status")]
-        public async Task<ActionResult<TicketDto>> UpdateTicketStatus(int id, [FromBody] UpdateTicketStatusDto dto)
+        public async Task<ActionResult<object>> UpdateTicketStatus(string id, [FromBody] UpdateTicketStatusDto dto)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            var userTypeClaim = User.FindFirst("Type");
+            try
+            {
+                var emailClaim = User.FindFirst(ClaimTypes.Email);
+                var typeClaim = User.FindFirst("Type");
+                var nameClaim = User.FindFirst(ClaimTypes.Name);
 
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+                if (emailClaim == null || typeClaim == null)
+                    return Unauthorized(new { message = "Token inválido" });
 
-            if (userTypeClaim?.Value != "company")
-                return Forbid("Apenas empresas podem atualizar status");
+                if (typeClaim.Value != "company")
+                    return Forbid("Apenas empresas podem atualizar status");
+
+                // Validar transições de status
+                var validStatuses = new[] { "aberto", "aceito", "em_coleta", "concluído" };
+                if (!validStatuses.Contains(dto.Status))
+                    return BadRequest(new { message = "Status inválido" });
+
+                // Se for aceitar, atribuir à empresa
+                string? assignedUserId = dto.Status == "aceito" ? emailClaim.Value : null;
+
+                await _firebaseService.UpdateTicketStatusAsync(id, dto.Status, assignedUserId);
+
+                _logger.LogInformation($"Ticket {id} status updated to {dto.Status} by {emailClaim.Value}");
+
+                return Ok(new { success = true, message = "Status atualizado" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating ticket {id}: {ex.Message}");
+                return StatusCode(500, new { message = "Erro ao atualizar ticket" });
+            }
+        }
+    }
+}
 
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
             if (ticket == null)
