@@ -1,9 +1,12 @@
 ﻿using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using GeoEntulho.API.Data;
 using GeoEntulho.API.Services;
+using Google.Cloud.Firestore;
+using Google.Apis.Auth.OAuth2;
+using Firebase.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,26 +14,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Inicializar Firebase usando environment variables
+var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
+var apiKey = Environment.GetEnvironmentVariable("FIREBASE_API_KEY");
 
-// Em produção, tenta ler da variável de ambiente
-if (string.IsNullOrEmpty(connectionString))
+if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(apiKey))
 {
-    var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
-    var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
-    var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "geoentulho";
-    var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "root";
-    var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "";
-    
-    connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};Uid={dbUser};Pwd={dbPassword};";
+    Console.WriteLine("[GeoEntulho] ⚠️  Firebase not configured. Development mode expected.");
+    Console.WriteLine($"  FIREBASE_PROJECT_ID: {(!string.IsNullOrEmpty(projectId) ? "✓" : "✗")}");
+    Console.WriteLine($"  FIREBASE_API_KEY: {(!string.IsNullOrEmpty(apiKey) ? "✓" : "✗")}");
+}
+else
+{
+    Console.WriteLine($"[GeoEntulho] ✓ Firebase configured. Project: {projectId}");
 }
 
-Console.WriteLine($"[GeoEntulho] Conectando ao banco: {connectionString?.Replace(connectionString.Split(';').Last(l => l.Contains("Pwd=")), "Pwd=***")}");
+// Registrar FirebaseService como singleton
+builder.Services.AddSingleton<IFirebaseService>(provider =>
+{
+    return new FirebaseService(projectId, apiKey, provider.GetRequiredService<ILogger<FirebaseService>>());
+});
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString, new MariaDbServerVersion(new Version(9, 6)))
-);
-
+// JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSettings["Key"] ?? Environment.GetEnvironmentVariable("JWT_SECRET") ?? throw new InvalidOperationException("JWT Key not configured");
 var key = Encoding.ASCII.GetBytes(jwtKey);
@@ -55,6 +60,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// CORS Configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -71,7 +77,6 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            // Em produção: permitir apenas o frontend específico com credentials
             policy.WithOrigins(frontendUrl)
                   .AllowAnyMethod()
                   .AllowAnyHeader()
@@ -84,31 +89,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Registrar serviços de aplicação
-builder.Services.AddScoped<IAuthService, AuthService>();
-
 var app = builder.Build();
 
-// Aplicar migrations automaticamente
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Console.WriteLine("[GeoEntulho] Iniciando aplicação de migrations...");
-        dbContext.Database.Migrate();
-        Console.WriteLine("[GeoEntulho] Migrations aplicadas com sucesso!");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[GeoEntulho] Erro ao aplicar migrations:");
-        Console.WriteLine($"  Tipo: {ex.GetType().Name}");
-        Console.WriteLine($"  Mensagem: {ex.Message}");
-        Console.WriteLine($"  StackTrace: {ex.StackTrace}");
-        // Continuar mesmo com erro nas migrations
-    }
-}
-
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -116,20 +99,10 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // Em produção no Railway, não usar HTTPS redirect
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Apenas usar HTTPS redirect em produção real
-if (!app.Environment.IsDevelopment() && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT")))
-{
-    // Railway environment
-}
-else if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
