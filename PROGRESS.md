@@ -1,10 +1,10 @@
-# 🚀 GeoEntulho - Frontend & Backend Integration Complete
+# 🚀 GeoEntulho - Firebase Integration Phase (Etapa 3)
 
-**Data**: 13 de Abril de 2026 (Continuação - Etapa 2)
-**Status**: Fase 2 - Frontend Integration (✅ CONCLUÍDO)
-**Prazo**: 30 dias até MVP funcional  
-**API Status**: 🟢 RODANDO EM http://localhost:5242 (Swagger disponível)
-**Frontend Build**: ✅ 275KB (gzipped) - 312ms compilation
+**Data**: 14 de Abril de 2026 (Etapa 3 - Firebase Backend)
+**Status**: Fase 3 - Firebase Integration (🔄 IN PROGRESS)
+**Prazo**: Deploy Firebase + Railway backend  
+**Frontend Status**: 🟢 DEPLOYED ON VERCEL (https://geo-entulho-scq0bw8xs-pedrowans-projects.vercel.app)
+**Backend Status**: 🟡 Code updated for Firebase (awaiting credentials & deployment)
 
 ---
 
@@ -13,28 +13,177 @@
 ### FASE 1: Backend Foundation (100% ✅)
 - ✅ Projeto .NET 8 inicializado
 - ✅ 5 Domain Models criados (User, Company, CollectionPoint, Ticket, TicketUpdate)
-- ✅ ApplicationDbContext configurado com todas as relações
-- ✅ MySQL 9.6 conectado e banco criado
-- ✅ Entity Framework migrations aplicadas
-- ✅ Program.cs totalmente configurado (JWT, CORS, DbContext)
-- ✅ API respondendo em http://localhost:5242
-- ✅ Swagger disponível para testes
+- ✅ ApplicationDbContext configurado
+- ✅ Program.cs totalmente refatorado para Firebase
+- ✅ JWT Authentication com claims (Email, Name, Type)
+- ✅ CORS configurado para frontend em produção
 
 ### FASE 2: Frontend Integration (100% ✅)
-- ✅ React/Vite projeto criado em `D:\GeoEntulho\frontend\geoentulho-web`
-- ✅ 183 dependências npm instaladas
-- ✅ Estrutura de pastas padronizada (pages, services, context, styles)
-- ✅ React Router v6 implementado com proteção de rotas
+- ✅ React/Vite projeto funcional
+- ✅ React Router v6 com proteção de rotas
 - ✅ AuthContext com useAuth hook
-- ✅ Axios API service com JWT interceptors automáticos
-- ✅ Pages: Login, Register, Home/Dashboard
-- ✅ Estilos CSS globais + páginas específicas
-- ✅ Frontend compila sem erros (npm run build)
-- ✅ Ready para desenvolvimento local
+- ✅ Axios com JWT interceptors automáticos
+- ✅ Login, Register, Home pages
+- ✅ **Deployed to Vercel** (auto-deploy from GitHub)
+
+### FASE 3: Firebase Integration (🔄 IN PROGRESS)
+- ✅ FirebaseService.cs criado (IFirebaseService interface)
+- ✅ AuthController reescrito para usar Firebase Auth + Firestore
+- ✅ TicketsController reescrito para usar Firebase
+- ✅ Program.cs atualizado: Firebase registration + JWT config
+- ✅ Todas as mudanças committed e pushed para GitHub main
+- 🟡 **AWAITING**: Firebase project credentials (FIREBASE_PROJECT_ID, FIREBASE_API_KEY)
+- 🟡 **AWAITING**: Railway environment variables setup
+- 🟡 **AWAITING**: Backend deployment to Railway
 
 ---
 
-## 📁 Estrutura do Projeto Atual
+## � PRÓXIMAS TAREFAS (Sequência para Deploy)
+
+### **1️⃣ CRÍTICO: Criar/Configurar Firebase Project (30 min)**
+
+**Option A: Usar um Firebase Project Existente**
+- [ ] Acessar https://console.firebase.google.com
+- [ ] Selecionar projeto existente
+- [ ] Anotar FIREBASE_PROJECT_ID
+
+**Option B: Criar Novo Firebase Project**
+- [ ] Ir em https://console.firebase.google.com
+- [ ] Click "+ Adicionar Projeto"
+- [ ] Nome: "GeoEntulho"
+- [ ] Aceitar termos, criar projeto
+- [ ] Anotar `FIREBASE_PROJECT_ID`
+
+**Configure Firebase Authentication:**
+- [ ] No Firebase Console → Authentication
+- [ ] Click "Começar"
+- [ ] Enable "Email/Password" provider
+- [ ] Copiar sua API Key (ou ir em Settings → Project Settings → Web API Key)
+- [ ] Anotar `FIREBASE_API_KEY`
+
+**Create Firestore Database:**
+- [ ] Firebase Console → Firestore Database → Criar Database
+- [ ] Modo: Production (regras protegidas)
+- [ ] Região: us-central1 (ou próxima)
+- [ ] **IMPORTANTE**: Criar duas collections manualmente ou deixar que a app crie:
+  - `users` (documents: user IDs)
+  - `tickets` (documents: ticket IDs)
+
+---
+
+### **2️⃣ CRÍTICO: Railway Environment Variables (15 min)**
+
+**Acessar Railway Dashboard:**
+- [ ] https://railway.app/dashboard
+- [ ] Selecionar projeto "GeoEntulho"
+- [ ] Click em "Variables" tab
+- [ ] Adicionar as 4 variáveis abaixo:
+
+| Variable Name | Value | Source |
+|---------------|-------|--------|
+| `FIREBASE_PROJECT_ID` | (seu project ID) | Firebase Console |
+| `FIREBASE_API_KEY` | (sua API key) | Firebase Settings |
+| `JWT_SECRET` | (gerar: openssl rand -hex 32) | Gerar novo |
+| `FRONTEND_URL` | https://geo-entulho-scq0bw8xs-pedrowans-projects.vercel.app | Vercel URL |
+
+**Após adicionar variáveis:**
+- [ ] Click "Save changes"
+- [ ] Click botão "Redeploy" para reiniciar com novas variáveis
+
+---
+
+### **3️⃣ Verificar Deployment (10 min)**
+
+**Railway Console:**
+- [ ] Abrir Logs tab
+- [ ] Procurar por: `[GeoEntulho] ✓ Firebase configured`
+- [ ] Se aparecer, Firebase está OK ✓
+- [ ] Se não, procurar por erros
+
+**Testar Endpoints (Postman ou Thunder Client):**
+```
+POST https://<railway-backend-url>/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "SecurePassword123",
+  "name": "Test User",
+  "type": "citizen"
+}
+```
+
+---
+
+## 📊 Current Code Status
+
+### Backend Files Updated
+| File | Changes | Status |
+|------|---------|--------|
+| [FirebaseService.cs](backend/GeoEntulho.API/Services/FirebaseService.cs) | ✅ Created - 7 core methods | ✅ Committed |
+| [AuthController.cs](backend/GeoEntulho.API/Controllers/AuthController.cs) | ✅ Rewritten for Firebase | ✅ Committed |
+| [TicketsController.cs](backend/GeoEntulho.API/Controllers/TicketsController.cs) | ✅ Rewritten for Firebase | ✅ Committed |
+| [Program.cs](backend/GeoEntulho.API/Program.cs) | ✅ Removed MySQL, added Firebase | ✅ Committed |
+| GeoEntulho.API.csproj | ✅ FirebaseAdmin v2.4.0 added | ✅ Done |
+
+### Frontend Status (No Changes)
+- ✅ Already deployed to Vercel
+- ✅ Ready to connect to Firebase backend
+- ℹ️ Currently pointing to old backend (will update when Railway deployed)
+
+---
+
+## 🔄 Architecture Overview (Firebase)
+
+```
+┌─────────────────┐
+│  React Frontend │ (Vercel)
+│   (deployed)    │
+└────────┬────────┘
+         │ (HTTPS)
+         ↓
+┌─────────────────────────────┐
+│  ASP.NET Core Backend       │ (Railway)
+│  - Program.cs: IFirebaseService registered
+│  - AuthController: Firebase Auth + JWT
+│  - TicketsController: Firestore CRUD
+└────────┬────────────────────┘
+         │ (gRPC/REST)
+         ↓
+┌──────────────────────────────┐
+│  Google Cloud Firestore      │
+│  - Collection: users         │
+│  - Collection: tickets       │
+│  - Real-time sync enabled    │
+└──────────────────────────────┘
+```
+
+---
+
+## 🎯 Next Phase: Local Testing (Optional)
+
+Para testar localmente ANTES de deploy:
+
+```bash
+# Terminal 1: Backend
+cd D:\GeoEntulho\backend\GeoEntulho.API
+$env:FIREBASE_PROJECT_ID="your-project-id"
+$env:FIREBASE_API_KEY="your-api-key"
+$env:JWT_SECRET="$(openssl rand -hex 32)"
+$env:FRONTEND_URL="http://localhost:5173"
+dotnet run
+
+# Terminal 2: Frontend
+cd D:\GeoEntulho\frontend\geoentulho-web
+npm run dev
+```
+
+Então:
+1. Abrir http://localhost:5173
+2. Registrar um novo usuário
+3. Verificar se o usuário foi criado no Firestore
+4. Fazer login
+5. Testar criar um ticket
 
 ```
 D:\GeoEntulho\
