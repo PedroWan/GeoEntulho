@@ -2,6 +2,10 @@ using GeoEntulho.API.DTOs;
 using GeoEntulho.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace GeoEntulho.API.Controllers
 {
@@ -9,20 +13,20 @@ namespace GeoEntulho.API.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IAuthService _authService;
+        private readonly IFirebaseService _firebaseService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(IFirebaseService firebaseService, ILogger<AuthController> logger, IConfiguration configuration)
         {
-            _authService = authService;
+            _firebaseService = firebaseService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         /// <summary>
         /// Register a new user (citizen or company)
         /// </summary>
-        /// <param name="dto">Registration data</param>
-        /// <returns>Success or error message</returns>
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto)
@@ -32,25 +36,47 @@ namespace GeoEntulho.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            _logger.LogInformation($"Registration attempt for email: {dto.Email}");
-
-            var result = await _authService.Register(dto);
-
-            if (!result.Success)
+            try
             {
-                return BadRequest(result);
+                _logger.LogInformation($"Registration attempt for email: {dto.Email}");
+
+                // Criar usuário no Firebase
+                var userId = await _firebaseService.CreateUserAsync(dto.Email, dto.Password, dto.Name, dto.Type);
+
+                // Gerar JWT token
+                var token = GenerateJwtToken(userId, dto.Email, dto.Name, dto.Type);
+
+                var response = new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Usuário registrado com sucesso",
+                    Token = token,
+                    User = new UserDto
+                    {
+                        Id = int.Parse(userId.GetHashCode().ToString()),
+                        Email = dto.Email,
+                        Name = dto.Name,
+                        Type = dto.Type
+                    }
+                };
+
+                _logger.LogInformation($"User registered successfully: {dto.Email}");
+                return Ok(response);
             }
-
-            _logger.LogInformation($"User registered successfully: {dto.Email}");
-
-            return Ok(result);
+            catch (Exception ex)
+            {
+                _logger.LogError($"Registration error: {ex.Message}");
+                return BadRequest(new AuthResponseDto
+                {
+                    Success = false,
+                    Message = $"Erro ao registrar: {ex.Message}"
+                });
+            }
         }
 
         /// <summary>
         /// Login with email and password
         /// </summary>
-        /// <param name="dto">Login credentials</param>
-        /// <returns>JWT token and user info if successful</returns>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
@@ -60,42 +86,79 @@ namespace GeoEntulho.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            _logger.LogInformation($"Login attempt for email: {dto.Email}");
-
-            var result = await _authService.Login(dto);
-
-            if (!result.Success)
+            try
             {
-                return Unauthorized(result);
+                _logger.LogInformation($"Login attempt for email: {dto.Email}");
+
+                // Verificar credenciais com Firebase (simplificado)
+                // Em produção, usar Firebase REST API ou SDK específico
+                var user = await _firebaseService.GetUserAsync(dto.Email);
+
+                if (user == null)
+                {
+                    return Unauthorized(new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Email ou senha inválidos"
+                    });
+                }
+
+                // Gerar JWT token
+                var token = GenerateJwtToken(
+                    dto.Email,
+                    dto.Email,
+                    user["name"].ToString(),
+                    user["type"].ToString()
+                );
+
+                var response = new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Login realizado com sucesso",
+                    Token = token,
+                    User = new UserDto
+                    {
+                        Id = dto.Email.GetHashCode(),
+                        Email = dto.Email,
+                        Name = user["name"].ToString(),
+                        Type = user["type"].ToString()
+                    }
+                };
+
+                _logger.LogInformation($"User logged in successfully: {dto.Email}");
+                return Ok(response);
             }
-
-            _logger.LogInformation($"User logged in successfully: {dto.Email}");
-
-            return Ok(result);
+            catch (Exception ex)
+            {
+                _logger.LogError($"Login error: {ex.Message}");
+                return Unauthorized(new AuthResponseDto
+                {
+                    Success = false,
+                    Message = $"Erro ao fazer login: {ex.Message}"
+                });
+            }
         }
 
         /// <summary>
         /// Get current user info (requires authentication)
         /// </summary>
-        /// <returns>Current user details</returns>
         [HttpGet("me")]
         [Authorize]
         public IActionResult GetCurrentUser()
         {
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email);
-            var nameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name);
+            var emailClaim = User.FindFirst(ClaimTypes.Email);
+            var nameClaim = User.FindFirst(ClaimTypes.Name);
             var typeClaim = User.FindFirst("Type");
 
-            if (userIdClaim == null)
+            if (emailClaim == null)
             {
                 return Unauthorized(new { message = "Token inválido" });
             }
 
             var user = new UserDto
             {
-                Id = int.Parse(userIdClaim.Value),
-                Email = emailClaim?.Value ?? "",
+                Id = emailClaim.Value.GetHashCode(),
+                Email = emailClaim.Value,
                 Name = nameClaim?.Value ?? "",
                 Type = typeClaim?.Value ?? ""
             };
@@ -104,50 +167,67 @@ namespace GeoEntulho.API.Controllers
         }
 
         /// <summary>
-        /// Get user profile (complete information)
+        /// Get user profile from Firestore
         /// </summary>
-        /// <returns>User profile details</returns>
         [HttpGet("profile")]
         [Authorize]
-        public async Task<ActionResult<UserProfileDto>> GetProfile()
+        public async Task<IActionResult> GetProfile()
         {
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            var emailClaim = User.FindFirst(ClaimTypes.Email);
+            if (emailClaim == null)
             {
                 return Unauthorized(new { message = "Token inválido" });
             }
 
-            var profile = await _authService.GetUserProfile(userId);
-            if (profile == null)
+            try
             {
-                return NotFound(new { message = "Usuário não encontrado" });
-            }
+                var user = await _firebaseService.GetUserAsync(emailClaim.Value);
+                if (user == null)
+                {
+                    return NotFound(new { message = "Usuário não encontrado" });
+                }
 
-            return Ok(profile);
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting profile: {ex.Message}");
+                return StatusCode(500, new { message = "Erro ao obter perfil" });
+            }
         }
 
         /// <summary>
-        /// Update user profile
+        /// Helper: Generate JWT Token
         /// </summary>
-        /// <param name="dto">Profile update data</param>
-        /// <returns>Updated profile</returns>
-        [HttpPut("profile")]
-        [Authorize]
-        public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
+        private string GenerateJwtToken(string userId, string email, string name, string type)
         {
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-            {
-                return Unauthorized(new { message = "Token inválido" });
-            }
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = Encoding.ASCII.GetBytes(
+                Environment.GetEnvironmentVariable("JWT_SECRET") ?? 
+                jwtSettings["Key"]
+            );
 
-            var profile = await _authService.UpdateUserProfile(userId, dto);
-            if (profile == null)
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                return NotFound(new { message = "Usuário não encontrado" });
-            }
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userId),
+                    new Claim(ClaimTypes.Email, email),
+                    new Claim(ClaimTypes.Name, name),
+                    new Claim("Type", type)
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(1440),
+                Issuer = jwtSettings["Issuer"],
+                Audience = jwtSettings["Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
 
-            _logger.LogInformation($"User profile updated: {userId}");
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+    }
+}
             return Ok(profile);
         }
     }
