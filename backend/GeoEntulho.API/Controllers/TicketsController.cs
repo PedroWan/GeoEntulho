@@ -155,34 +155,3 @@ namespace GeoEntulho.API.Controllers
         }
     }
 }
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Ticket {id} status updated to {dto.Status} by company {userId}");
-
-            return Ok(MapToDto(ticket));
-        }
-
-        private TicketDto MapToDto(Ticket ticket)
-        {
-            return new TicketDto
-            {
-                Id = ticket.Id,
-                Title = ticket.Title,
-                Description = ticket.Description,
-                WasteType = ticket.WasteType,
-                Address = ticket.Address,
-                City = ticket.City,
-                State = ticket.State,
-                Phone = ticket.Phone,
-                EstimatedWeight = ticket.EstimatedWeight,
-                Status = ticket.Status,
-                CreatedByUserId = ticket.CreatedByUserId,
-                CreatedByName = ticket.CreatedByUser?.Name,
-                AssignedToUserId = ticket.AssignedToUserId,
-                AssignedToName = ticket.AssignedToUser?.Name,
-                CreatedAt = ticket.CreatedAt,
-                UpdatedAt = ticket.UpdatedAt
-            };
-        }
-    }
-}

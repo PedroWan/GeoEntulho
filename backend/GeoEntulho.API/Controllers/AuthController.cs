@@ -249,7 +249,3 @@ namespace GeoEntulho.API.Controllers
         }
     }
 }
-            return Ok(profile);
-        }
-    }
-}
