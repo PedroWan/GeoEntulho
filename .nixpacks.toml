@@ -1,5 +1,0 @@
-[build]
-providers = ["dotnet"]
-
-[env]
-DOTNET_SDK_VERSION = "8.0"

@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "cd backend/GeoEntulho.API && dotnet publish -c Release -o /app/published"
+  },
+  "start": {
+    "cmd": "dotnet /app/published/GeoEntulho.API.dll"
+  }
+}
