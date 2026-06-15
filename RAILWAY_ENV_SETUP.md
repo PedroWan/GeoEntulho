@@ -6,7 +6,7 @@ Configure as seguintes variáveis no Railway Dashboard → GeoEntulho → Variab
 
 | Variável | Valor | Exemplo |
 |----------|-------|---------|
-| `JWT_SECRET` | Chave secreta JWT (32+ caracteres) | `abc123def456ghi789jkl012mno345pqr` |
+| `JWT_SECRET` | Chave secreta JWT (32+ caracteres) | `f70c2528a976e754e3943c82c0fc9fa0372223bf88ecf79958b225608f93a569` |
 | `DB_HOST` | Host do MySQL Railway | `railway.app` (ou IP fornecido) |
 | `DB_PORT` | Porta do MySQL | `3306` |
 | `DB_NAME` | Nome do banco de dados | `geoentulho` |
@@ -54,6 +54,21 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Ou use um gerador online: https://www.random.org/strings/
 
 Precisa ter **mínimo 32 caracteres**.
+
+---
+
+## ✅ Variáveis Prontas para Usar
+
+Copie e cole no Railway → Variables:
+
+```
+DB_HOST=mysql.railway.internal
+DB_PORT=3306
+DB_NAME=railway
+DB_USER=root
+DB_PASSWORD=shrJgkCEkJQoxHpmXLUrwCFjpsmImoC
+JWT_SECRET=f70c2528a976e754e3943c82c0fc9fa0372223bf88ecf79958b225608f93a569
+```
 
 ---
 

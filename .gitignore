@@ -28,6 +28,12 @@ x86/
 # Visual Studio cache/options
 .vs/
 
+# Environment variables and secrets
+RAILWAY_ENV_SETUP.md
+*.env
+*.env.local
+.env.*.local
+
 # NuGet
 .nuget/
 nuget.config
