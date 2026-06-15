@@ -155,27 +155,6 @@ namespace GeoEntulho.API.Controllers
         }
     }
 }
-
-            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
-            if (ticket == null)
-                return NotFound();
-
-            // Validar transição de status
-            var validStatuses = new[] { "aceito", "em_coleta", "concluído" };
-            if (!validStatuses.Contains(dto.Status))
-                return BadRequest("Status inválido");
-
-            // Se for 'aceito', atribuir à empresa
-            if (dto.Status == "aceito")
-            {
-                ticket.AssignedToUserId = userId;
-                ticket.AssignedToUser = await _context.Users.FindAsync(userId);
-            }
-
-            ticket.Status = dto.Status;
-            ticket.UpdatedAt = DateTime.UtcNow;
-
-            _context.Tickets.Update(ticket);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Ticket {id} status updated to {dto.Status} by company {userId}");

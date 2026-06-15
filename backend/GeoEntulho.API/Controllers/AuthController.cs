@@ -90,8 +90,7 @@ namespace GeoEntulho.API.Controllers
             {
                 _logger.LogInformation($"Login attempt for email: {dto.Email}");
 
-                // Verificar credenciais com Firebase (simplificado)
-                // Em produção, usar Firebase REST API ou SDK específico
+                // Verificar credenciais com Firebase
                 var user = await _firebaseService.GetUserAsync(dto.Email);
 
                 if (user == null)
@@ -204,8 +203,30 @@ namespace GeoEntulho.API.Controllers
             var jwtSettings = _configuration.GetSection("Jwt");
             var key = Encoding.ASCII.GetBytes(
                 Environment.GetEnvironmentVariable("JWT_SECRET") ?? 
-                jwtSettings["Key"]
+                jwtSettings["Key"] ?? "default-secret-key-change-this"
             );
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userId),
+                    new Claim(ClaimTypes.Email, email),
+                    new Claim(ClaimTypes.Name, name),
+                    new Claim("Type", type)
+                }),
+                Expires = DateTime.UtcNow.AddHours(24),
+                Issuer = jwtSettings["Issuer"] ?? "GeoEntulho",
+                Audience = jwtSettings["Audience"] ?? "GeoEntulho.Users",
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+    }
+}
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
