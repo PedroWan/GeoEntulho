@@ -3,7 +3,6 @@ using GeoEntulho.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Google.Cloud.Firestore;
 
 namespace GeoEntulho.API.Controllers
 {
@@ -76,8 +75,8 @@ namespace GeoEntulho.API.Controllers
                     { "status", "aberto" },
                     { "createdByUserId", emailClaim.Value },
                     { "createdByName", nameClaim?.Value ?? "" },
-                    { "createdAt", Timestamp.Now },
-                    { "updatedAt", Timestamp.Now }
+                    { "createdAt", DateTime.UtcNow },
+                    { "updatedAt", DateTime.UtcNow }
                 };
 
                 var ticketId = await _firebaseService.CreateTicketAsync(ticketData);

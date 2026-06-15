@@ -4,9 +4,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using GeoEntulho.API.Services;
-using Google.Cloud.Firestore;
-using Google.Apis.Auth.OAuth2;
-using Firebase.Auth;
+using GeoEntulho.API.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,26 +13,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-// Inicializar Firebase usando environment variables
-var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
-var apiKey = Environment.GetEnvironmentVariable("FIREBASE_API_KEY");
-
-if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(apiKey))
+// Configure EF Core with connection string (MySQL)
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION") ?? builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
 {
-    Console.WriteLine("[GeoEntulho] ⚠️  Firebase not configured. Development mode expected.");
-    Console.WriteLine($"  FIREBASE_PROJECT_ID: {(!string.IsNullOrEmpty(projectId) ? "✓" : "✗")}");
-    Console.WriteLine($"  FIREBASE_API_KEY: {(!string.IsNullOrEmpty(apiKey) ? "✓" : "✗")}");
+    Console.WriteLine("[GeoEntulho] ⚠️  No DB connection string configured. Using in-memory for development.");
+    builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseInMemoryDatabase("GeoEntulhoDev"));
 }
 else
 {
-    Console.WriteLine($"[GeoEntulho] ✓ Firebase configured. Project: {projectId}");
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 }
 
-// Registrar FirebaseService como singleton
-builder.Services.AddSingleton<IFirebaseService>(provider =>
-{
-    return new FirebaseService(projectId, apiKey, provider.GetRequiredService<ILogger<FirebaseService>>());
-});
+// Register SQL-backed data service
+builder.Services.AddScoped<IFirebaseService, SqlDataService>();
 
 // JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
