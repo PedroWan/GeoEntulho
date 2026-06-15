@@ -96,7 +96,6 @@ namespace GeoEntulho.API.Services
             List<Ticket> tickets;
             if (role == "citizen")
             {
-                // userId is email here historically: try to resolve
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == userId);
                 if (user == null) return new List<Dictionary<string, object>>();
                 tickets = await _db.Tickets.Where(t => t.CreatedByUserId == user.Id).ToListAsync();
@@ -122,7 +121,6 @@ namespace GeoEntulho.API.Services
 
         public async Task<string> CreateTicketAsync(Dictionary<string, object> ticketData)
         {
-            // Resolve creator
             var createdBy = ticketData.ContainsKey("createdByUserId") ? ticketData["createdByUserId"].ToString() : null;
             User? user = null;
             if (!string.IsNullOrEmpty(createdBy))
