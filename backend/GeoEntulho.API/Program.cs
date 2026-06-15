@@ -102,4 +102,19 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Apply EF Core migrations at startup (creates tables on Railway MySQL)
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Database.Migrate();
+        Console.WriteLine("[GeoEntulho] Database migrations applied.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[GeoEntulho] Failed to apply migrations: {ex.Message}");
+    }
+}
+
 app.Run();
