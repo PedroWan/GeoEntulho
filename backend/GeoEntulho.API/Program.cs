@@ -31,7 +31,11 @@ builder.Services.AddScoped<IFirebaseService, SqlDataService>();
 
 // JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSettings["Key"] ?? Environment.GetEnvironmentVariable("JWT_SECRET") ?? throw new InvalidOperationException("JWT Key not configured");
+var envJwt = Environment.GetEnvironmentVariable("JWT_SECRET");
+var configJwt = jwtSettings["Key"];
+var jwtKey = !string.IsNullOrWhiteSpace(envJwt)
+    ? envJwt
+    : (!string.IsNullOrWhiteSpace(configJwt) ? configJwt : throw new InvalidOperationException("JWT Key not configured"));
 var key = Encoding.ASCII.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
