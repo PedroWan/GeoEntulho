@@ -7,6 +7,38 @@ using GeoEntulho.API.Services;
 using GeoEntulho.API.Data;
 using Microsoft.EntityFrameworkCore;
 
+// Safe exception printer (placed early so global handlers can use it)
+static void PrintExceptionSafe(Exception? ex)
+{
+    if (ex == null) return;
+    try
+    {
+        Console.WriteLine($"[Unhandled] Exception Type: {ex.GetType().FullName}");
+        Console.WriteLine($"[Unhandled] Message: {ex.Message}");
+        if (!string.IsNullOrEmpty(ex.StackTrace)) Console.WriteLine("[Unhandled] StackTrace:\n" + ex.StackTrace);
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine("[Unhandled] InnerException:");
+            PrintExceptionSafe(ex.InnerException);
+        }
+    }
+    catch
+    {
+        try { Console.WriteLine("[Unhandled] Failed to print exception details."); } catch { }
+    }
+}
+
+// Global handlers to capture exceptions that happen very early
+AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+{
+    try { PrintExceptionSafe(e.ExceptionObject as Exception ?? new Exception("Unhandled exception object")); } catch { }
+};
+TaskScheduler.UnobservedTaskException += (s, e) =>
+{
+    try { PrintExceptionSafe(e.Exception); } catch { }
+    e.SetObserved();
+};
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configurar logging para diagnóstico
@@ -88,27 +120,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-// Helper: print exception details safely (avoids Exception.ToString() rethrowing)
-static void PrintExceptionSafe(Exception? ex)
-{
-    if (ex == null) return;
-    try
-    {
-        Console.WriteLine($"[Unhandled] Exception Type: {ex.GetType().FullName}");
-        Console.WriteLine($"[Unhandled] Message: {ex.Message}");
-        if (!string.IsNullOrEmpty(ex.StackTrace)) Console.WriteLine("[Unhandled] StackTrace:\n" + ex.StackTrace);
-        if (ex.InnerException != null)
-        {
-            Console.WriteLine("[Unhandled] InnerException:");
-            PrintExceptionSafe(ex.InnerException);
-        }
-    }
-    catch
-    {
-        try { Console.WriteLine("[Unhandled] Failed to print exception details."); } catch { }
-    }
-}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
