@@ -41,6 +41,42 @@ TaskScheduler.UnobservedTaskException += (s, e) =>
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Diagnostic: list loaded assemblies and runtime info (avoid touching types that trigger static initializers)
+try
+{
+    Console.WriteLine($"[Diag] Runtime: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
+    var loaded = AppDomain.CurrentDomain.GetAssemblies()
+        .Select(a => new { a.GetName().Name, a.GetName().Version })
+        .OrderBy(a => a.Name);
+    Console.WriteLine("[Diag] Loaded assemblies:");
+    foreach (var a in loaded)
+    {
+        Console.WriteLine($"  - {a.Name} {a.Version}");
+    }
+}
+catch (Exception ex)
+{
+    try { Console.WriteLine($"[Diag] Failed to list assemblies: {ex.Message}"); } catch { }
+}
+
+// Safely build the app and capture any exceptions during build
+IHost? builtHost = null;
+try
+{
+    // builder.Build() can trigger DI type initializers; wrap to capture errors
+    builtHost = builder.Build();
+}
+catch (Exception ex)
+{
+    PrintExceptionSafe(ex);
+    try
+    {
+        Console.WriteLine($"[Diag] Environment JWT_SECRET length: {(Environment.GetEnvironmentVariable("JWT_SECRET")?.Length ?? 0)}");
+    }
+    catch { }
+    Environment.Exit(1);
+}
+
 // Configurar logging para diagnóstico
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -119,24 +155,26 @@ builder.Services.AddCors(options =>
     });
 });
 
-Console.WriteLine("[Startup] STEP: adding controllers and swagger");
+Console.WriteLine("[Startup] STEP: adding controllers (Swagger temporarily disabled)");
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Temporarily disabled for diagnostics: avoid initializing Swagger which may load additional assemblies
+// builder.Services.AddEndpointsApiExplorer();
+// builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
+var app = builtHost!;
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger and SwaggerUI temporarily disabled for diagnostics
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
+// }
+// else
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
+// }
 
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
@@ -149,8 +187,25 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        db.Database.Migrate();
-        Console.WriteLine("[GeoEntulho] Database migrations applied.");
+        try
+        {
+            var providerName = db.Database.ProviderName ?? "(unknown)";
+            Console.WriteLine($"[GeoEntulho] DB Provider: {providerName}");
+            // Only attempt relational migrations when provider supports it
+            if (db.Database.IsRelational())
+            {
+                db.Database.Migrate();
+                Console.WriteLine("[GeoEntulho] Database migrations applied.");
+            }
+            else
+            {
+                Console.WriteLine("[GeoEntulho] Skipping migrations: non-relational provider.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GeoEntulho] Failed to apply migrations: {ex.Message}");
+        }
     }
 
     app.Run();
