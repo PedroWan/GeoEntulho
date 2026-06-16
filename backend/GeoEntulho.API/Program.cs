@@ -46,6 +46,7 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 // Configure EF Core with connection string (MySQL)
+Console.WriteLine("[Startup] STEP: configuring DB");
 var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION") ?? builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
@@ -59,9 +60,11 @@ else
 }
 
 // Register SQL-backed data service
+Console.WriteLine("[Startup] STEP: registering SqlDataService");
 builder.Services.AddScoped<IFirebaseService, SqlDataService>();
 
 // JWT Configuration
+Console.WriteLine("[Startup] STEP: configuring JWT");
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var envJwt = Environment.GetEnvironmentVariable("JWT_SECRET");
 var configJwt = jwtSettings["Key"];
@@ -91,6 +94,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 // CORS Configuration
+Console.WriteLine("[Startup] STEP: configuring CORS");
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -115,6 +119,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+Console.WriteLine("[Startup] STEP: adding controllers and swagger");
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
