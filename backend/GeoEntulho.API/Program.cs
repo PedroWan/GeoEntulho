@@ -89,6 +89,27 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Helper: print exception details safely (avoids Exception.ToString() rethrowing)
+static void PrintExceptionSafe(Exception? ex)
+{
+    if (ex == null) return;
+    try
+    {
+        Console.WriteLine($"[Unhandled] Exception Type: {ex.GetType().FullName}");
+        Console.WriteLine($"[Unhandled] Message: {ex.Message}");
+        if (!string.IsNullOrEmpty(ex.StackTrace)) Console.WriteLine("[Unhandled] StackTrace:\n" + ex.StackTrace);
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine("[Unhandled] InnerException:");
+            PrintExceptionSafe(ex.InnerException);
+        }
+    }
+    catch
+    {
+        try { Console.WriteLine("[Unhandled] Failed to print exception details."); } catch { }
+    }
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -107,18 +128,31 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Apply EF Core migrations at startup (creates tables on Railway MySQL)
-using (var scope = app.Services.CreateScope())
+try
 {
-    try
+    using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         db.Database.Migrate();
         Console.WriteLine("[GeoEntulho] Database migrations applied.");
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[GeoEntulho] Failed to apply migrations: {ex.Message}");
-    }
-}
 
-app.Run();
+    app.Run();
+}
+catch (Exception ex)
+{
+    // Print useful details without relying on Exception.ToString()
+    PrintExceptionSafe(ex);
+    // Also print some environment diagnostics (mask secrets)
+    try
+    {
+        var dbConn = Environment.GetEnvironmentVariable("DB_CONNECTION");
+        Console.WriteLine($"[GeoEntulho] DB_CONNECTION present: {(!string.IsNullOrWhiteSpace(dbConn)).ToString()}");
+        var jwt = Environment.GetEnvironmentVariable("JWT_SECRET");
+        Console.WriteLine($"[GeoEntulho] JWT_SECRET length: {(jwt is null ? 0 : jwt.Length)}");
+    }
+    catch { }
+
+    // Ensure non-zero exit so container stops
+    Environment.Exit(1);
+}
